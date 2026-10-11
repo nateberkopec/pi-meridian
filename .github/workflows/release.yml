@@ -1,0 +1,32 @@
+name: Publish beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - run: |
+          VERSION=$(node -p "require('./package.json').version")
+          test "$GITHUB_REF" = "refs/tags/v$VERSION"
+          git merge-base --is-ancestor HEAD origin/main
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+        with:
+          cache: true
+          experimental: true
+      - run: mise run setup
+      - run: mise run lint
+      - run: mise run test
+      - run: mise run build
+      - run: npm publish tmp/*.tgz --provenance --access public --tag beta

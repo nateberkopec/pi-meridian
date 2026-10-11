@@ -1,0 +1,14 @@
+{
+  "useTabs": true,
+  "printWidth": 120,
+  "ignorePatterns": [
+    "node_modules/**",
+    "development/node_modules/**",
+    "vendor/**",
+    "tmp/**",
+    ".claude/worktrees/**",
+    ".pi-subagents/**",
+    "tools/oxlint/anti-slop/**",
+    "skills/**"
+  ]
+}
