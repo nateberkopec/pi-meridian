@@ -1,0 +1,45 @@
+[env]
+_.file = ".env"
+
+[tools]
+node = "26.10.0"
+ruby = "4.0.7"
+"github:aubepkg/aube" = "2.6.1"
+"npm:typescript" = "7.0.2"
+"npm:@earendil-works/pi-coding-agent" = "1.1.0"
+hk = "2.4.0"
+gitleaks = "8.30.1"
+
+[tasks.setup]
+run = "bash tools/setup-development.sh && gem install minitest -v 6.0.0 --no-document"
+
+[tasks.lint]
+depends = ["lint:javascript", "lint:secrets"]
+
+[tasks."lint:javascript"]
+sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
+run = "node_modules/.bin/oxlint --deny-warnings extensions test && node_modules/.bin/oxfmt --check extensions test"
+
+[tasks."lint:secrets"]
+run = "gitleaks dir --redact=75 --no-banner --no-color --max-target-megabytes 5 ."
+
+[tasks.test]
+depends = ["test:contracts", "test:package", "test:types"]
+
+[tasks."test:contracts"]
+sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
+run = "ruby -Itest -e 'Dir.glob(\"test/extensions/*_test.rb\").sort.each { |file| require_relative file }'"
+
+[tasks."test:package"]
+sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml", "LICENSE", "README.md"]
+run = "node --test test/package_system_test.mjs"
+
+[tasks."test:types"]
+sources = ["extensions/**", "tsconfig.json", "package.json", "development/package.json", "development/aube-lock.yaml"]
+run = "tsc --project tsconfig.json"
+
+[tasks.build]
+run = "mkdir -p tmp && npm pack --ignore-scripts --pack-destination tmp"
+
+[tasks.format]
+run = "node_modules/.bin/oxfmt extensions test package.json tsconfig.json"
