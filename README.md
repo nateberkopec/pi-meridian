@@ -69,8 +69,8 @@ Development dependencies are isolated under `development/` with a frozen aube lo
 
 ## Releases
 
-Changes go through pull requests. The manually dispatched `release.yml` workflow only publishes from a `v<package-version>` tag whose commit is contained in `main`. It reruns lint, contracts, type checks, and tarball installation before publishing to npm’s `beta` tag with provenance.
+Changes go through pull requests. The manually dispatched `release.yml` workflow only stages artifacts from a `v<package-version>` tag whose commit is contained in `main`. It reruns lint, contracts, type checks, and tarball installation, then uploads the tarball, SHA-256 checksum, and source commit. It has no npm publish step or OIDC permission.
 
-The npm package and trusted publisher still require initial owner setup. Do not dispatch the publish workflow until that setup and publication are explicitly authorized. No npm token is stored in this repository, and no GitHub settings change is required by this workflow.
+Every publication requires fresh physical YubiKey verification. Staging or approving a GitHub workflow is not that verification. Do not configure npm trusted publishing until a release gate enforcing this requirement is implemented and verified. No npm token is stored in this repository, and staging requires no GitHub settings change.
 
 MIT licensed. Extracted from Nate Berkopec’s `agent-stuff`; this is an independent package, not an official Meridian release.
