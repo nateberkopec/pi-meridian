@@ -1,4 +1,4 @@
-name: Publish beta
+name: Stage beta
 
 on:
   workflow_dispatch:
@@ -7,12 +7,9 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  stage:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -29,4 +26,16 @@ jobs:
       - run: mise run lint
       - run: mise run test
       - run: mise run build
-      - run: npm publish tmp/*.tgz --provenance --access public --tag beta
+      - run: |
+          cd tmp
+          sha256sum *.tgz > SHA256SUMS
+          printf '%s\n' "$GITHUB_SHA" > SOURCE_COMMIT
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: beta-release-candidate
+          path: |
+            tmp/*.tgz
+            tmp/SHA256SUMS
+            tmp/SOURCE_COMMIT
+          if-no-files-found: error
+          retention-days: 7
