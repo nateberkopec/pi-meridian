@@ -10,6 +10,9 @@ export { buildModels, fetchModels } from "./meridian/catalog.ts";
 const PROVIDER = "meridian";
 
 export default async function meridian(pi: ExtensionAPI) {
+	pi.on("cache_warming_decision", (_event, ctx) => {
+		if (ctx.model?.provider === PROVIDER) return { action: "stop" };
+	});
 	const state: RequestState = { child: process.env.PI_SUBAGENT_CHILD === "1" };
 	pi.on("session_start", (_event, ctx) => {
 		state.sessionId = ctx.sessionManager.getSessionId();
