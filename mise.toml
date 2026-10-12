@@ -17,8 +17,8 @@ run = "bash tools/setup-development.sh && gem install minitest -v 6.0.0 --no-doc
 depends = ["lint:javascript", "lint:secrets"]
 
 [tasks."lint:javascript"]
-sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
-run = "node_modules/.bin/oxlint --deny-warnings extensions test && node_modules/.bin/oxfmt --check extensions test"
+sources = ["extensions/**", "test/**", "tools/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
+run = "node_modules/.bin/oxlint --deny-warnings extensions test tools && node_modules/.bin/oxfmt --check extensions test tools"
 
 [tasks."lint:secrets"]
 run = "gitleaks dir --redact=75 --no-banner --no-color --max-target-megabytes 5 ."
@@ -42,4 +42,4 @@ run = "tsc --project tsconfig.json"
 run = "mkdir -p tmp && npm pack --ignore-scripts --pack-destination tmp"
 
 [tasks.format]
-run = "node_modules/.bin/oxfmt extensions test package.json tsconfig.json"
+run = "node_modules/.bin/oxfmt extensions test tools package.json tsconfig.json"

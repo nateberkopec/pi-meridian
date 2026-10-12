@@ -73,4 +73,6 @@ Changes go through pull requests. The manually dispatched `release.yml` workflow
 
 Every publication requires fresh physical YubiKey verification. Staging or approving a GitHub workflow is not that verification. Do not configure npm trusted publishing until a release gate enforcing this requirement is implemented and verified. No npm token is stored in this repository, and staging requires no GitHub settings change.
 
+For the first publication, use `node tools/publish-beta.mjs <staged-tarball> <reviewed-source-commit>` in your own interactive terminal. Keep the staged `SHA256SUMS` and `SOURCE_COMMIT` beside the tarball. The helper checks the artifact and npm account, requires the pinned card-backed OpenPGP signing subkey with uncached touch policy, signs a fresh package/version/source/checksum approval, verifies it, and publishes the same private snapshot with native npm. Cancelling or failing signature verification prevents publication. Never bypass the helper with a direct publish command; npm account permissions outside this repository are not controlled by this helper.
+
 MIT licensed. Extracted from Nate Berkopec’s `agent-stuff`; this is an independent package, not an official Meridian release.
