@@ -29,12 +29,22 @@ class MeridianProviderTest < Minitest::Test
         };
         let registered;
         let beforeHeaders;
+        let warmingDecision;
         await meridian({
           on: (event, handler) => {
             if (event === "before_provider_headers") beforeHeaders = handler;
+            if (event === "cache_warming_decision") warmingDecision = handler;
           },
           registerProvider: (id, config) => { registered = { id, config }; },
         });
+        for (const action of ["warm", "stop"]) {
+          if (warmingDecision({ action }, { model: { provider: "meridian" } })?.action !== "stop") {
+            throw new Error("Meridian cache warming was not stopped");
+          }
+          for (const model of [undefined, { provider: "anthropic" }, { provider: "openai" }]) {
+            if (warmingDecision({ action }, { model }) !== undefined) throw new Error("unrelated warming decision changed");
+          }
+        }
         let sessionId = "session-original";
         const ctx = { sessionManager: { getSessionId: () => sessionId } };
         for (const id of ["session-original", "session-original", "session-new", "session-fork"]) {
