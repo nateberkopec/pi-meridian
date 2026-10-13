@@ -8,7 +8,7 @@ class MeridianWireTest < Minitest::Test
     verify_contract(<<~TS)
       import meridian from #{EXTENSION.to_json};
       async function check() {
-        const catalog = { object: "list", data: [{ id: "claude-new", object: "model", owned_by: "anthropic",
+        const catalog = { object: "list", data: [{ id: "claude-opus-4-8", object: "model", owned_by: "anthropic",
           display_name: "New", context_window: 200000, capabilities: {
             thinking: { supported: true, types: { adaptive: { supported: true } } },
             effort: { high: { supported: true }, max: { supported: true } },
@@ -18,7 +18,7 @@ class MeridianWireTest < Minitest::Test
           if (String(url).endsWith("/v1/models")) return new Response(JSON.stringify(catalog));
           requests.push({ headers: new Headers(init.headers), body: JSON.parse(init.body) });
           const events = [
-            { type: "message_start", message: { id: "msg-test", type: "message", role: "assistant", model: "claude-new", content: [], stop_reason: null,
+            { type: "message_start", message: { id: "msg-test", type: "message", role: "assistant", model: "claude-opus-4-8", content: [], stop_reason: null,
               usage: { input_tokens: 2, output_tokens: 0, cache_read_input_tokens: 100, cache_creation_input_tokens: 10 } } },
             { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "", signature: "" } },
             { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Thinking" } },
@@ -40,8 +40,14 @@ class MeridianWireTest < Minitest::Test
         const ctx = { sessionManager: { getSessionId: () => "root" } };
         handlers.get("session_start")({}, ctx);
         const model = { ...config.models[0], provider: "meridian" };
-        const context = { messages: [{ role: "system", content: "Test", tools: [{ name: "read", description: "Read", parameters: { type: "object" } }] },
-          { role: "user", content: [{ type: "text", text: "hello" }], timestamp: 1 }] };
+        const context = { messages: [{ role: "system", content: "Test", toolsAdded: [
+          { name: "read", description: "Read", parameters: { type: "object" } },
+          { name: "subagents_enable", description: "Enable", parameters: { type: "object" } },
+        ], timestamp: 0 },
+          { role: "user", content: [{ type: "text", text: "hello" }], timestamp: 1 },
+          { role: "system", content: "Subagent is now available", toolsAdded: [
+            { name: "subagent", description: "Delegate", parameters: { type: "object" } },
+          ], toolsRemoved: [{ name: "subagents_enable" }], timestamp: 2 }] };
         let payloads = 0, responses = 0;
         const options = { apiKey: "x", reasoning: "max", sessionId: "root",
           headers: { ...config.headers, "x-opencode-task-budget": "50000", "x-meridian-profile": "work" },
@@ -55,6 +61,13 @@ class MeridianWireTest < Minitest::Test
         assert.equal(payloads, 1); assert.equal(responses, 1);
         assert.equal(requests[0].body.thinking.type, "adaptive");
         assert.equal(requests[0].body.output_config.effort, "max");
+        for (const block of requests[0].body.messages.flatMap(message => Array.isArray(message.content) ? message.content : [])) {
+          assert.ok(!["tool_addition", "tool_removal"].includes(block.type), `Unsupported inline block: ${block.type}`);
+        }
+        assert.deepEqual(requests[0].body.tools.map(tool => tool.name), ["read", "subagent"]);
+        assert.ok(!requests[0].headers.get("anthropic-beta")?.includes("inline-tools-"));
+        assert.ok(!requests[0].body.tools.some(tool => tool.defer_loading));
+        assert.deepEqual(context.messages[2].toolsAdded.map(tool => tool.name), ["subagent"]);
         assert.equal(requests[0].headers.get("x-session-affinity"), "root");
         assert.equal(requests[0].headers.get("x-opencode-agent-mode"), "primary");
         assert.equal(requests[0].headers.get("x-opencode-task-budget"), "50000");

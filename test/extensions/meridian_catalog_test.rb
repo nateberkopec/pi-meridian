@@ -11,7 +11,8 @@ class MeridianCatalogTest < Minitest::Test
       async function check() {
         const known = { id: "known", api: "anthropic-messages", contextWindow: 1000000, maxTokens: 64000, reasoning: true,
           input: ["text", "image"], cost: { input: 1, output: 2, cacheRead: 3, cacheWrite: 4 },
-          compat: { supportsMidConvoEffort: true }, inputLimits: { maxRequestBytes: 1234 } };
+          compat: { supportsMidConvoEffort: true, supportsMidConvoSystemMessages: true, supportsMidConvoToolChanges: true },
+          inputLimits: { maxRequestBytes: 1234 } };
         const entry = { id: "known", object: "model", owned_by: "anthropic", display_name: "Known",
           context_window: 200000, capabilities: {
             image_input: { supported: false },
@@ -28,6 +29,9 @@ class MeridianCatalogTest < Minitest::Test
         assert.deepEqual(model.inputLimits, known.inputLimits);
         assert.equal(model.compat.forceAdaptiveThinking, true);
         assert.equal(model.compat.supportsMidConvoEffort, true);
+        assert.equal(model.compat.supportsMidConvoSystemMessages, true);
+        assert.equal(model.compat.supportsMidConvoToolChanges, false);
+        assert.equal(known.compat.supportsMidConvoToolChanges, true);
         assert.deepEqual(getSupportedThinkingLevels(model), ["off", "minimal", "low", "medium", "high", "max"]);
         assert.equal(model.thinkingLevelMap.max, "max");
         assert.equal(model.thinkingLevelMap.minimal, "low");
@@ -37,6 +41,7 @@ class MeridianCatalogTest < Minitest::Test
         const newer = buildModels(catalog, [known])[0];
         assert.equal(newer.maxTokens, 8192);
         assert.equal(newer.compat.forceAdaptiveThinking, true);
+        assert.equal(newer.compat.supportsMidConvoToolChanges, false);
         assert.equal(newer.thinkingLevelMap.off, null);
         assert.deepEqual(getSupportedThinkingLevels(newer), ["minimal", "low", "medium", "high", "max"]);
         entry.capabilities.thinking.supported = false;

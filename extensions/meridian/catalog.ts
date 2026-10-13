@@ -58,7 +58,10 @@ function thinkingMetadata(entry: CatalogModel, known?: Model<"anthropic-messages
 		thinkingLevelMap.minimal = thinkingLevelMap.low;
 	}
 
-	const compat: NonNullable<Model<"anthropic-messages">["compat"]> = { ...known?.compat };
+	const compat: NonNullable<Model<"anthropic-messages">["compat"]> = {
+		...known?.compat,
+		supportsMidConvoToolChanges: false,
+	};
 
 	if (adaptive !== undefined) compat.forceAdaptiveThinking = adaptive;
 
