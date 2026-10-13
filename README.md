@@ -13,16 +13,16 @@ Provider permissions, subscription limits, and billing policies still apply. Thi
 
 ## Install
 
-The npm prerelease is not published yet. For a source installation:
+For a source installation:
 
 ```fish
 pi install git:github.com/nateberkopec/pi-meridian
 ```
 
-For reproducible installations, pin that source to an agreed commit or release tag. Once the npm prerelease has been published, the corresponding command will be:
+For reproducible installations, pin that source to an agreed commit or release tag, or install the pinned npm prerelease:
 
 ```fish
-pi install npm:@nateberkopec/pi-meridian@0.1.0-beta.1
+pi install npm:@nateberkopec/pi-meridian@0.1.0-beta.2
 ```
 
 Start and authenticate Meridian using its [official setup instructions](https://github.com/rynfar/meridian). Restart Pi or run `/reload`, then select a model under the `meridian` provider with `/model`. Do not also load an old copy of this extension from `agent-stuff` or your extensions directory.
@@ -38,7 +38,7 @@ Use the server root URL without `/v1`. Keep unauthenticated Meridian on loopback
 
 ## Behavior
 
-The catalog is authoritative for model availability, context windows, image input, thinking, and supported effort levels. Known models retain Pi’s output limit and compatibility metadata. Unknown models use a conservative 8,192-token output limit, bounded by their context window; the context window is not an output-limit guarantee. Costs inherited from known models are API-equivalent estimates, not subscription charges.
+The catalog is authoritative for model availability, context windows, image input, thinking, and supported effort levels. Known models retain Pi’s output limit and compatibility metadata, except native inline tool changes are disabled for Meridian’s Claude Code backend. Dynamic tools use the current request-level tool list instead. Unknown models use a conservative 8,192-token output limit, bounded by their context window; the context window is not an output-limit guarantee. Costs inherited from known models are API-equivalent estimates, not subscription charges.
 
 Discovery is bounded by a two-second startup timeout and a three-second refresh timeout. A validated catalog-only cache survives outages for up to seven days under Pi’s agent directory at `cache/meridian-models.json`. It contains no prompts, credentials, or request headers. Opening `/model` retries network discovery; cached models do not mean Meridian is online.
 
