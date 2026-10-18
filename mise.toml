@@ -3,35 +3,30 @@ _.file = ".env"
 
 [tools]
 node = "26.10.0"
-ruby = "4.0.7"
 "github:aubepkg/aube" = "2.6.1"
 "npm:typescript" = "7.0.2"
-"npm:@earendil-works/pi-coding-agent" = "1.1.0"
+"npm:@earendil-works/pi-coding-agent" = "1.3.0"
 hk = "2.4.0"
 gitleaks = "8.30.1"
 
 [tasks.setup]
-run = "bash tools/setup-development.sh && gem install minitest -v 6.0.0 --no-document --bindir tmp/gem-bin"
+run = "bash tools/setup-development.sh"
 
 [tasks.lint]
 depends = ["lint:javascript", "lint:secrets"]
 
 [tasks."lint:javascript"]
-sources = ["extensions/**", "test/**", "tools/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
-run = "node_modules/.bin/oxlint --deny-warnings extensions test tools && node_modules/.bin/oxfmt --check extensions test tools"
+sources = ["test/**", "tools/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
+run = "node_modules/.bin/oxlint --deny-warnings test tools && node_modules/.bin/oxfmt --check test tools"
 
 [tasks."lint:secrets"]
 run = "gitleaks dir --redact=75 --no-banner --no-color --max-target-megabytes 5 ."
 
 [tasks.test]
-depends = ["test:contracts", "test:package", "test:types"]
-
-[tasks."test:contracts"]
-sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml"]
-run = "ruby -Itest -e 'Dir.glob(\"test/extensions/*_test.rb\").sort.each { |file| require_relative file }'"
+depends = ["test:package", "test:types"]
 
 [tasks."test:package"]
-sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml", "LICENSE", "README.md"]
+sources = ["extensions/**", "test/**", "package.json", "development/package.json", "development/aube-lock.yaml", "LICENSE", "README.md", "UPSTREAM"]
 run = "node --test test/package_system_test.mjs"
 
 [tasks."test:types"]
@@ -42,4 +37,4 @@ run = "tsc --project tsconfig.json"
 run = "mkdir -p tmp && npm pack --ignore-scripts --pack-destination tmp"
 
 [tasks.format]
-run = "node_modules/.bin/oxfmt extensions test tools package.json tsconfig.json"
+run = "node_modules/.bin/oxfmt test tools package.json tsconfig.json"

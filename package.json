@@ -1,7 +1,7 @@
 {
 	"name": "@nateberkopec/pi-meridian",
-	"version": "0.1.0-beta.2",
-	"description": "Meridian Claude provider extension for Pi",
+	"version": "0.2.0-beta.1",
+	"description": "Mirror of the Meridian Pi extension, published for Pi's package manager",
 	"keywords": [
 		"claude",
 		"meridian",
@@ -14,6 +14,7 @@
 	},
 	"files": [
 		"extensions",
+		"UPSTREAM",
 		"LICENSE"
 	],
 	"type": "module",
@@ -23,15 +24,14 @@
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-ai": "*",
-		"@earendil-works/pi-coding-agent": "*",
-		"typebox": "*"
+		"@earendil-works/pi-coding-agent": "*"
 	},
 	"engines": {
 		"node": ">=22"
 	},
 	"pi": {
 		"extensions": [
-			"./extensions/meridian.ts"
+			"./extensions/meridian/index.ts"
 		]
 	}
 }

@@ -1,18 +1,41 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { test } from "node:test";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const sdk = import.meta.resolve("@earendil-works/pi-coding-agent");
 
-test("the tarball installs only Meridian and executes discovery in an isolated real Pi runtime", () => {
+test("the tarball installs into an isolated real Pi and discovers Meridian's models", async () => {
 	const home = mkdtempSync(path.join(tmpdir(), "pi-meridian-package-"));
 	const agentDir = path.join(home, "agent");
-	const env = { ...process.env, HOME: home, PI_CODING_AGENT_DIR: agentDir, PI_OFFLINE: "1" };
+	const env = { ...process.env, HOME: home, PI_CODING_AGENT_DIR: agentDir, PI_SKIP_VERSION_CHECK: "1" };
+	delete env.PI_OFFLINE;
+	const requests = [];
+	const meridian = createServer((request, response) => {
+		requests.push(request.url);
+		response.setHeader("content-type", "application/json");
+		response.end(
+			JSON.stringify({
+				object: "list",
+				data: [
+					{
+						id: "claude-package-test",
+						object: "model",
+						owned_by: "anthropic",
+						display_name: "Package test",
+						context_window: 200000,
+						capabilities: {},
+					},
+				],
+			}),
+		);
+	});
+	await new Promise((resolve) => meridian.listen(0, "127.0.0.1", resolve));
 
 	try {
 		const packed = JSON.parse(
@@ -22,57 +45,41 @@ test("the tarball installs only Meridian and executes discovery in an isolated r
 				encoding: "utf8",
 			}),
 		)[0];
-		assert.ok(!packed.files.some((file) => /^(node_modules|test|tmp|development)\//.test(file.path)));
+		assert.deepEqual(packed.files.map((file) => file.path).sort(), [
+			"LICENSE",
+			"README.md",
+			"UPSTREAM",
+			"extensions/meridian/index.ts",
+			"extensions/meridian/pi/catalog.ts",
+			"extensions/meridian/pi/headers.ts",
+			"extensions/meridian/pi/index.ts",
+			"extensions/meridian/priority-attestation.ts",
+			"package.json",
+		]);
 		execFileSync("tar", ["-xzf", path.resolve(home, packed.filename), "-C", home]);
 		const installed = path.join(home, "package");
-		assert.match(readFileSync(path.join(installed, "LICENSE"), "utf8"), /^MIT License/);
 		execFileSync("pi", ["install", installed], { cwd: home, env, timeout: 30_000 });
-		const worker = `
-			import assert from "node:assert/strict";
-			import fs from "node:fs";
-			import path from "node:path";
-			import { DefaultResourceLoader, SettingsManager } from ${JSON.stringify(sdk)};
-			const installed = ${JSON.stringify(installed)};
-			const catalog = { object: "list", data: [{ id: "package-test", object: "model", owned_by: "anthropic",
-				display_name: "Package test", context_window: 200000, capabilities: {} }] };
-			let discoveries = 0;
-			globalThis.fetch = async (url) => {
-				assert.ok(String(url).endsWith("/v1/models"));
-				discoveries++;
-				return new Response(JSON.stringify(catalog));
-			};
-			const loader = new DefaultResourceLoader({
-				cwd: process.cwd(), agentDir: process.env.PI_CODING_AGENT_DIR,
-				settingsManager: SettingsManager.create(process.cwd(), process.env.PI_CODING_AGENT_DIR),
-				noContextFiles: true,
-			});
-			await loader.reload();
-			const loaded = loader.getExtensions();
-			assert.deepEqual(loaded.errors, []);
-			assert.deepEqual(loaded.warnings ?? [], []);
-			assert.deepEqual(loaded.extensions.map(e => e.resolvedPath), [path.join(installed, "extensions/meridian.ts")]);
-			assert.equal(discoveries, 1);
-			assert.equal(loaded.extensions.flatMap(e => [...e.tools.keys()]).length, 0);
-			assert.equal(loaded.extensions.flatMap(e => [...e.commands.keys()]).length, 0);
-			assert.deepEqual(loader.getSkills().skills, []);
-			assert.deepEqual(loader.getPrompts().prompts, []);
-			const cached = JSON.parse(fs.readFileSync(path.join(process.env.PI_CODING_AGENT_DIR, "cache/meridian-models.json"), "utf8"));
-			assert.deepEqual(cached.catalog, catalog);
-			console.log("packed Meridian verified");
-		`;
-		const output = execFileSync("node", ["--input-type=module", "-e", worker], {
-			cwd: home,
-			env,
-			encoding: "utf8",
-			timeout: 30_000,
-		});
-		assert.match(output, /packed Meridian verified/);
 		const settings = JSON.parse(readFileSync(path.join(agentDir, "settings.json"), "utf8"));
 		assert.deepEqual(
 			settings.packages.map((source) => path.resolve(agentDir, source)),
 			[installed],
 		);
+
+		const { stdout } = await promisify(execFile)("pi", ["--list-models", "meridian"], {
+			cwd: home,
+			env: { ...env, MERIDIAN_BASE_URL: `http://127.0.0.1:${meridian.address().port}` },
+			encoding: "utf8",
+			timeout: 30_000,
+		});
+		assert.match(stdout, /^meridian\s+claude-package-test\s/m);
+		assert.deepEqual(requests, ["/v1/models"]);
+		const store = JSON.parse(readFileSync(path.join(agentDir, "models-store.json"), "utf8"));
+		assert.deepEqual(
+			store.meridian.models.map((model) => model.id),
+			["claude-package-test"],
+		);
 	} finally {
+		meridian.close();
 		rmSync(home, { recursive: true, force: true });
 	}
 });

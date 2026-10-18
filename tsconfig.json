@@ -1,9 +1,8 @@
 {
 	"compilerOptions": {
-		"allowImportingTsExtensions": true,
 		"lib": ["ES2023", "DOM"],
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		"module": "Preserve",
+		"moduleResolution": "Bundler",
 		"noEmit": true,
 		"skipLibCheck": true,
 		"strict": true,
