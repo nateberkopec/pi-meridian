@@ -1,37 +1,11 @@
 {
 	"name": "@nateberkopec/pi-meridian",
 	"version": "0.2.0-beta.1",
-	"description": "Mirror of the Meridian Pi extension, published for Pi's package manager",
-	"keywords": [
-		"claude",
-		"meridian",
-		"pi-package"
-	],
+	"private": true,
+	"description": "Retired npm mirror; use Meridian setup --client pi",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/nateberkopec/pi-meridian.git"
-	},
-	"files": [
-		"extensions",
-		"UPSTREAM",
-		"LICENSE"
-	],
-	"type": "module",
-	"publishConfig": {
-		"access": "public",
-		"tag": "beta"
-	},
-	"peerDependencies": {
-		"@earendil-works/pi-ai": "*",
-		"@earendil-works/pi-coding-agent": "*"
-	},
-	"engines": {
-		"node": ">=22"
-	},
-	"pi": {
-		"extensions": [
-			"./extensions/meridian/index.ts"
-		]
 	}
 }
